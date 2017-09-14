@@ -4,14 +4,15 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
-class ManageSession extends Model
+class Booking extends Model
 {
     //
-    public $table = 'sessions';
+    public $table = 'bookings';
 
     protected $fillable = [
-        'output',
         'sender_id',
-        'email'
+        'book_id',
+        'email',
+        'name'
     ];
 }

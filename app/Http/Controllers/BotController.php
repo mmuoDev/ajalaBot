@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Booking;
+use App\Libraries\Utilities;
+use App\Wishlist;
 use Illuminate\Http\Request;
 use DB;
 use Session;
@@ -36,20 +39,215 @@ class BotController extends Controller
         //$response = null;
         $userUrl = "https://graph.facebook.com/v2.6/$senderId?fields=first_name,last_name,profile_pic&access_token=".env('ACCESS_TOKEN');
         $file = file_get_contents($userUrl);
-        $output = json_decode($file);
-        $firstname = $output->first_name;
-        $lastname = $output->last_name;
+        $out = json_decode($file);
+        $firstname = $out->first_name;
+        $lastname = $out->last_name;
         $name = $lastname.' '.$firstname;
 
-        $trip = null;
+        //$trip = null;
         if($message == 'hi') {
             $response = [
                 'recipient' => ['id' => $senderId],
                 'message' => ['text' => $message]
             ];
+            Utilities::sendMessage($response);
+        }
+        if($message == "REQUEST_A_TRIP"){ //Request a trip
+            $output = ["attachment" => [
+                "type" => "template",
+                "payload" => [
+                    "template_type" => "button",
+                    "text" => "Ajala Bot also help you plan a trip.".PHP_EOL."Just tell us where you would love to go and we will".PHP_EOL.
+                    "help plan the perfect getaway ;)",
+                    "buttons" => [
+                        [
+                            "type" => "postback",
+                            "title" => "Get Started",
+                            "payload" => "PAYLOAD_CONTACT"
+                        ]
+                    ]
+                ]
+            ]];
+            // $_SESSION['output'] = $output;
+            $response = [
+                'recipient' => ['id' => $senderId],
+                'message' => $output
+            ];
+            Utilities::sendMessage($response);
+        }
+        //Cancel request i.e. truncate the table based on sender Id
+        if($message == 'Cancel') {
+
+            DB::table('sessions')->where('sender_id', $senderId)->delete();
+            $response = [
+                'recipient' => ['id' => $senderId],
+                'message' => ['text' => 'Request Cancelled. Use Menu Tab']
+            ];
+            Utilities::sendMessage($response);
+        }
+        if($message  == "PAYLOAD_CONTACT"){
+            $email_request = "Please provide me with your email ;)";
+            $create = ManageSession::create([
+                'output' => 'contact email',
+                'sender_id' => $senderId
+            ]);
+            if($create) {
+                $response = [
+                    'recipient' => ['id' => $senderId],
+                    'message' => ['text' => $email_request]
+                ];
+                Utilities::sendMessage($response);
+                exit;
+            }else{
+                //echo 'error';
+            }
+        }
+        //Foreach loop ends
+        $up = DB::select("select * from sessions where output = 'contact email not valid' and sender_id = '$senderId'");
+        $count = DB::select("select * from sessions where output = 'contact email' and sender_id = '$senderId'");
+        $request = DB::select("select * from sessions where output = 'email provided' and sender_id = '$senderId'");
+        //$get = session()->pull('output', 'default');
+
+        //Check if the user has already booked this trip
+        if ($message != '' && count($count) == 1) {
+            if (filter_var($message, FILTER_VALIDATE_EMAIL)){
+                //Send mail and update output column === null and insert into bookings table
+
+                /**
+                 * Send mail to the use to confirm booking
+                 */
+                DB::table('sessions')
+                    ->where('sender_id', $senderId)
+                    ->update(['email' => $message,
+                        'output' => 'email provided']);
+                $response = [
+                    'recipient' => ['id' => $senderId],
+                    'message' => ['text' => 'Enter your request and send']
+                ];
+                Utilities::sendMessage($response);
+
+            }else{
+                //Update output column, request email and re-validate
+                DB::table('sessions')
+                    ->where('sender_id', $senderId)
+                    ->update(['output' => 'contact email not valid']);
+
+                $response = [
+                    'recipient' => ['id' => $senderId],
+                    'message' => ['text' => "Email not valid, Try again. Enter 'Cancel' to cancel request"]
+                ];
+                Utilities::sendMessage($response);
+            }
 
         }
-        else if ($message == "GET_STARTED_PAYLOAD"){
+        else if ($message != '' && count($up) == 1) {
+
+            if (filter_var($message, FILTER_VALIDATE_EMAIL)){
+                //Send mail and update output column === null and insert into bookings table
+
+                /**
+                 * Send mail to the use to confirm booking
+                 */
+                DB::table('sessions')
+                    ->where('sender_id', $senderId)
+                    ->update(['email' => $message,
+                        'output' => 'email provided']);
+                $response = [
+                    'recipient' => ['id' => $senderId],
+                    'message' => ['text' => 'Enter your request and send']
+                ];
+                Utilities::sendMessage($response);
+
+            }else{
+                //Update output column, request email and re-validate
+                DB::table('sessions')
+                    ->where('sender_id', $senderId)
+                    ->update(['output' => 'contact email not valid']);
+
+                $response = [
+                    'recipient' => ['id' => $senderId],
+                    'message' => ['text' => "Email not valid, Try again. Enter 'Cancel' to cancel request"]
+                ];
+                Utilities::sendMessage($response);
+            }
+
+        }
+        else if ($message != '' && count($request) == 1) {
+
+            $select = DB::select("select * from sessions where sender_id = '$senderId'");
+            foreach ($select as $select) {
+                $email = $select->email;
+            }
+            $details = array(
+                'text' => $message,
+                'email' => $email
+            );
+            $name = Utilities::getName($senderId);
+            Mail::send('emails.contact', $details, function ($send) use ($email, $name) {
+                $send->from('ajalabot.ng@gmail.com', $name);
+                //$send->cc($email)->subject('Queries');
+                $send->to('ajalabot.ng@gmail.com')->subject('Queries');
+
+            });
+            DB::table('sessions')->where('sender_id', $senderId)->delete();
+            /**
+            DB::table('sessions')
+                ->where('sender_id', $senderId)
+                ->update([
+                    'output' => '']);
+             * */
+            $response = [
+                    'recipient' => ['id' => $senderId],
+                    'message' => ['text' => "Request sent, You will receive a reply soon  B-)"]
+            ];
+            Utilities::sendMessage($response);
+                //Send Mail and update output to null
+
+
+
+
+        }
+        if($message == "PAYLOAD_WISHLIST"){
+            //Fetch all items in wishlist for this user
+            $wishlist = DB::select("select a.*,  b.* from wishlists as a, trips as b where 
+                        b.wish_id = a.wish_id and sender_id = '$senderId'");
+            if(count($wishlist) > 0){
+                foreach($wishlist as $trip) { //Loop through all trips
+                    $res[] = array(
+                        //[[
+                        "title" => $trip->title,
+                        "image_url" => "http://www.renewventurestravel.com.ng/img/Tours/Abuja/1.jpg", //Default tour image
+                        "buttons" => [
+                            [
+                                "type" => "postback",
+                                "title" => "Details",
+                                "payload" => $trip->id
+                            ]
+                        ]);
+                    //]];
+
+                }
+                $output = ["attachment" => [
+                    "type" => "template",
+                    "payload" => [
+                        "template_type" => "generic",
+                        "elements" => $res
+                    ]]];
+                $response = [
+                    'recipient' => ['id' => $senderId],
+                    'message' => $output
+                ];
+                Utilities::sendMessage($response);
+            }else{
+                $response = [
+                    'recipient' => ['id' => $senderId],
+                    'message' => ['text' => 'No items in your wishlist']
+                ];
+                Utilities::sendMessage($response);
+            }
+        }
+        //Wishlist ends
+        if ($message == "GET_STARTED_PAYLOAD"){
             $output = ["attachment" => [
                 "type" => "template",
                 "payload" => [
@@ -74,14 +272,15 @@ class BotController extends Controller
                 'recipient' => ['id' => $senderId],
                 'message' => $output
             ];
+            Utilities::sendMessage($response);
             //break;
-        }else if($message == "FIND_TRIPS"){
+        }if($message == "FIND_TRIPS"){
             $trips = DB::select("select * from trips");
             foreach($trips as $trip) { //Loop through all trips
                 $res[] = array(
                     //[[
                         "title" => $trip->title,
-                        "image_url" => "http://www.renewventurestravel.com.ng/img/Tours/Abuja/1.jpg",
+                        "image_url" => "http://www.renewventurestravel.com.ng/img/Tours/Abuja/1.jpg", //Default tour image
                         "buttons" => [
                             [
                                 "type" => "postback",
@@ -102,6 +301,7 @@ class BotController extends Controller
                     'recipient' => ['id' => $senderId],
                     'message' => $output
                 ];
+            Utilities::sendMessage($response);
         }
         $tripDetails = DB::select("select * from trips");
         foreach($tripDetails as $tripDetail) {
@@ -127,7 +327,7 @@ class BotController extends Controller
                             [
                                 "type" => "postback",
                                 "title" => "Add to Wishlist",
-                                "payload" => "FIND_TRIPS"
+                                "payload" => "$tripDetail->wish_id"
                             ]
                         ]
                     ]
@@ -137,98 +337,200 @@ class BotController extends Controller
                     'recipient' => ['id' => $senderId],
                     'message' => $output
                 ];
+                Utilities::sendMessage($response);
             }
+
+        }
+        $bookTrips = DB::select("select * from trips");
+        foreach ($bookTrips as $bookTrip) {
+            $bookid = $bookTrip->book_id;
+            $wishid = $bookTrip->wish_id;
+        //$count = DB::select("select * from sessions where output = 'enter email' and sender_id = '$senderId'");
+            if ($message == $bookid) {
+                //Check if trip is already booked
+                $check = DB::select("select * from bookings where book_id = '$bookid'");
+                if(count($check) > 0){
+                    //Trip already booked
+                    $response = [
+                        'recipient' => ['id' => $senderId],
+                        'message' => ['text' => "You have already booked this trip :P"]
+                    ];
+                    Utilities::sendMessage($response);
+                }else{ //book the trip
+                    $email_request = "Please provide me with your email ;)";
+                    $create = ManageSession::create([
+                        'output' => 'enter email',
+                        'sender_id' => $senderId
+                    ]);
+                    if($create) {
+                        $response = [
+                            'recipient' => ['id' => $senderId],
+                            'message' => ['text' => $email_request]
+                        ];
+                        Utilities::sendMessage($response);
+                        exit;
+                    }else{
+                        //echo 'error';
+                    }
+                }
+
+            } //
+            //Do for wishlist. Add to wishlist
+            else if ($message == $wishid) {
+                $count = DB::select("select * from wishlists where wish_id = '$message'");
+                if(count($count) > 0){
+                    $response = [
+                        'recipient' => ['id' => $senderId],
+                        'message' => ['text' => "Trip already added to your wishlist ;)"]
+                    ];
+                    Utilities::sendMessage($response);
+                }
+                else{
+                    $wish = Wishlist::create([
+                        'wish_id' => $message,
+                        'sender_id' => $senderId
+                    ]);
+                    if($wish) {
+                        $response = [
+                            'recipient' => ['id' => $senderId],
+                            'message' => ['text' => "Trip added to wishlist (y) Type 'Menu' to do more. B-)"]
+                        ];
+                        Utilities::sendMessage($response);
+                        //exit;
+                    }
+                }
+            } //
         }
         /**
          * Book trips and send emails
          */
-        $bookTrips = DB::select("select * from trips");
-        foreach ($bookTrips as $bookTrip){
-            $email_request = "Please provide me with your email ;)";
-            $bookid = $bookTrip->book_id;
-            if($message == $bookid) {
-                $session = session(['output' => $email_request]);
+
+
+
+
+        //Foreach loop ends
+        $up = DB::select("select * from sessions where output = 'Email not valid, Try again' and sender_id = '$senderId'");
+        $count = DB::select("select * from sessions where output = 'enter email' and sender_id = '$senderId'");
+        //$get = session()->pull('output', 'default');
+
+        //Check if the user has already booked this trip
+        if ($message != '' && count($count) == 1) {
+            if (filter_var($message, FILTER_VALIDATE_EMAIL)){
+                //Send mail and update output column === null and insert into bookings table
+
+                /**
+                 * Send mail to the use to confirm booking
+                 */
+                $details = array(
+                    'name' => $name,
+                    'trip' => $bookTrip->title
+                );
+
+                Mail::send('emails.welcome', $details, function ($send) use ($message) {
+                    $send->from('ajalabot.ng@gmail.com', 'AjalaBot Support');
+                    $send->cc('ajalabot.ng@gmail.com')->subject('Booking Confirmation');
+                    $send->to($message)->subject('Booking Confirmation');
+
+                });
+                //Email sent
+                //Add to bookings table
+                Booking::create([
+                    'sender_id' => $senderId,
+                    'book_id' => $bookid,
+                    'email' => $message,
+                    'name' => $name
+                ]);
+                //added to bookings table
+                //Update session column 'output'  ==  null
+                /**
+                DB::table('sessions')
+                    ->where('sender_id', $senderId)
+                    ->update(['output' => '']); **/
+                DB::table('sessions')->where('sender_id', $senderId)->delete();
+                //Column updated
                 $response = [
                     'recipient' => ['id' => $senderId],
-                    'message' => ['text' => $email_request]
+                    'message' => ['text' => 'Booking confirmed! An email has been sent to you. :D']
                 ];
-                $create = ManageSession::create([
-                    'output' => 'enter email',
-                    'sender_id' => $senderId
-                ]);
-            }else {
-                $count = DB::select("select * from sessions where output = 'enter email' and sender_id = '$senderId'");
-                //$get = session()->pull('output', 'default');
-                if (isset($message) && count($count) > 0) {
-                    if (filter_var($message, FILTER_VALIDATE_EMAIL)){
-                        //Send mail and update output column === null and insert into bookings table
+                Utilities::sendMessage($response);
 
-                        /**
-                         * Send mail to the use to confirm booking
-                         */
-                        $data = array(
-                            'name' => $name,
-                            'trip' => $bookTrip->title
-                        );
+            }else{
+                //Update output column, request email and re-validate
+                DB::table('sessions')
+                    ->where('sender_id', $senderId)
+                    ->update(['output' => 'Email not valid, Try again']);
 
-                        Mail::send('emails.welcome', $data, function ($send) use ($message) {
-                            $send->from('ajalabot.ng@gmail.com', 'AjalaBot Support');
-                            $send->cc('ajalabot.ng@gmail.com')->subject('Booking Confirmation');
-                            $send->to($message)->subject('Booking Confirmation');
-
-                        });
-                        $response = [
-                            'recipient' => ['id' => $senderId],
-                            'message' => ['text' => 'Booking confirmed! An email has been sent to you.']
-                        ];
-
-                    }else{
-                        //Update output column, request email and re-validate
-                        $response = [
-                            'recipient' => ['id' => $senderId],
-                            'message' => ['text' => "Email not valid, Try again"]
-                        ];
-                        $update = DB::table('sessions')
-                                    ->where('sender_id', $senderId)
-                                    ->update(['output' => 'Email not valid, Try again']);
-                    }
-
-                }
-                $up = DB::select("select * from sessions where output = 'Email not valid, Try again' and sender_id = '$senderId'");
-                if (isset($message) && count($up) > 0) {
-                    if (filter_var($message, FILTER_VALIDATE_EMAIL)){
-
-                        $response = [
-                            'recipient' => ['id' => $senderId],
-                            'message' => ['text' => "Email is valid"]
-                        ];
-                        //Send mail and update output column === null
-                    }else{
-                        $response = [
-                            'recipient' => ['id' => $senderId],
-                            'message' => ['text' => "Email not valid, Try again"]
-                        ];
-                        //Update output column, request email and re-validate
-                        $update = DB::table('sessions')
-                            ->where('sender_id', $senderId)
-                            ->update(['output' => 'Email not valid, Try again']);
-                    }
-                }
-                //}
+                $response = [
+                    'recipient' => ['id' => $senderId],
+                    'message' => ['text' => "Email not valid, Try again. Enter 'Cancel' to cancel support"]
+                ];
+                Utilities::sendMessage($response);
             }
 
         }
+        else if ($message != '' && count($up) == 1) {
+            if (filter_var($message, FILTER_VALIDATE_EMAIL)){
+                //Send mail and update output column === null and insert into bookings table
+
+                /**
+                 * Send mail to the use to confirm booking
+                 */
+                $details = array(
+                    'name' => $name,
+                    'trip' => $bookTrip->title
+                );
+
+                Mail::send('emails.welcome', $details, function ($send) use ($message) {
+                    $send->from('ajalabot.ng@gmail.com', 'AjalaBot Support');
+                    $send->cc('ajalabot.ng@gmail.com')->subject('Booking Confirmation');
+                    $send->to($message)->subject('Booking Confirmation');
+
+                });
+                //Email sent
+                //Add to bookings table
+                Booking::create([
+                    'sender_id' => $senderId,
+                    'book_id' => $bookid,
+                    'email' => $message,
+                    'name' => $name
+                ]);
+                //added to bookings table
+                //Update session column 'output'  ==  null
+                /**
+                DB::table('sessions')
+                    ->where('sender_id', $senderId)
+                    ->update(['output' => '']);
+                 * **/
+                DB::table('sessions')->where('sender_id', $senderId)->delete();
+                //Column updated
+                $response = [
+                    'recipient' => ['id' => $senderId],
+                    'message' => ['text' => "Booking confirmed! An email has been sent to you. :D"]
+                ];
+                Utilities::sendMessage($response);
+                //Send mail and update output column === null
+            }else{
+                $response = [
+                    'recipient' => ['id' => $senderId],
+                    'message' => ['text' => "Email not valid, Try again"]
+                ];
+                Utilities::sendMessage($response);
+                //Update output column, request email and re-validate
+                $update = DB::table('sessions')
+                    ->where('sender_id', $senderId)
+                    ->update(['output' => "Email not valid, Try again. Enter 'Cancel' to cancel request"]);
+            }
+        }
+        /**
         $url = 'https://graph.facebook.com/v2.6/me/messages?access_token='.env("ACCESS_TOKEN");
         $ch = curl_init($url);
-        /* curl setting to send a json post data */
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($response));
         curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        //if ($message != "") {
         curl_exec($ch); // user will get the message
-        //}
         curl_close($ch);
+        **/
 
     }
 }

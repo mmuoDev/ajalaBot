@@ -4,14 +4,15 @@
     <meta charset="utf-8">
 </head>
 <body>
-<h2>Booking Confirmation!</h2>
+<h2>Query!</h2>
 
 <div>
-    Dear {!! $name !!}, <br>
+    Dear Support, <br>
     {{-- Welcome to {!! $name !!} website! <br> --}}
-    This is to confirm booking for the trip - {!! $trip !!} <br>
+   {!! $text !!} <br><br>
+    Sent by {!! $email !!}
 
-    You will be contacted very soon by one of our agents. <br><br>
+    <br>
     Regards, <br>
     AjalaBot
 
