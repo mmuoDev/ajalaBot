@@ -13,8 +13,9 @@
 
 
 Route::get('/', function (){
-    echo 'Ajala Bot';
+    //echo 'Ajala Bot';
 });
+Route::get('/policy', 'MenuController@policy');
 
 //Route::get('/bot', 'BotController@bot')->middleware('verifybot');
 
