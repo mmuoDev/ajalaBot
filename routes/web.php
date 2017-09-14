@@ -12,7 +12,9 @@
 */
 
 
-Route::get('/', 'BotController@test');
+Route::get('/', function (){
+    echo 'Ajala Bot';
+});
 
 //Route::get('/bot', 'BotController@bot')->middleware('verifybot');
 
