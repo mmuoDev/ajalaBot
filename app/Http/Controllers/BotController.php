@@ -377,7 +377,7 @@ class BotController extends Controller
             } //
             //Do for wishlist. Add to wishlist
             else if ($message == $wishid) {
-                $count = DB::select("select * from wishlists where wish_id = '$message'");
+                $count = DB::select("select * from wishlists where wish_id = '$message' and sender_id = '$senderId'");
                 if(count($count) > 0){
                     $response = [
                         'recipient' => ['id' => $senderId],
@@ -393,7 +393,7 @@ class BotController extends Controller
                     if($wish) {
                         $response = [
                             'recipient' => ['id' => $senderId],
-                            'message' => ['text' => "Trip added to wishlist (y) Type 'Menu' to do more. B-)"]
+                            'message' => ['text' => "Trip added to wishlist (y) B-)"]
                         ];
                         Utilities::sendMessage($response);
                         //exit;
