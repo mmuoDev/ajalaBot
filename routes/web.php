@@ -1,4 +1,5 @@
 <?php
+use Illuminate\Support\Facades\DB;
 
 /*
 |--------------------------------------------------------------------------
@@ -13,37 +14,27 @@
 
 
 Route::get('/', function (){
-    //echo 'Ajala Bot';
+    $string = "ajala33";
+    dd(str_replace('ajala', '', $string));
+    
 });
+
+Auth::routes();
+Route::get('logout', 'Auth\LoginController@logout');
+
 Route::get('/policy', 'MenuController@policy');
 
 //Route::get('/bot', 'BotController@bot')->middleware('verifybot');
 
 Route::match(['post', 'get'], '/bot', 'BotController@bot')->middleware('verifybot');
-//Auth::routes();
 
 Route::get('/home', 'HomeController@index')->name('home');
 
-Route::get('sendemail', function () {
-    //return view('emails.welcome');
-
-    $data = array(
-        'name' => "Learning Laravel",
-    );
-
-    $mail = Mail::send('emails.welcome', $data, function ($message) {
-
-        $message->from('yourEmail@domain.com', 'Learning Laravel');
-        $message->cc('radioactive.uche11@gmail.com')->subject('Learning Laravel test email');
-        $message->to('naijacompetitions@gmail.com')->subject('Learning Laravel test email');
-
-    });
-    if($mail){
-        return 'true';
-    }else{
-        return error_get_last()['message'];
-    }
-    //return "Your email has been sent successfully";
-
-
+Route::group(['prefix' => 'travels'], function (){
+    Route::match(['post', 'get'], '/', 'TravelController@index')->name('travels');
+    Route::match(['post', 'get'], '/create', 'TravelController@create');
+    Route::match(['post', 'get'], '/edit/{id}', 'TravelController@update')->name('edit_travels');
+    Route::get('/download-file/{id}', 'TravelController@download_file');
 });
+
+

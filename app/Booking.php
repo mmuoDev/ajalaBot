@@ -10,9 +10,10 @@ class Booking extends Model
     public $table = 'bookings';
 
     protected $fillable = [
-        'sender_id',
-        'book_id',
-        'email',
-        'name'
+        'user_session_id',
+        'travel_id',
+        'name',
+        'phone',
+        'status_id'
     ];
 }

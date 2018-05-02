@@ -1,69 +1,105 @@
-@extends('layouts.app')
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Login </title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--===============================================================================================-->
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="{{asset('/login_/vendor/bootstrap/css/bootstrap.min.css')}}">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="{{asset('/login_/fonts/font-awesome-4.7.0/css/font-awesome.min.css')}}">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="{{asset('/login_/fonts/Linearicons-Free-v1.0.0/icon-font.min.css')}}">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="{{asset('/login_/fonts/iconic/css/material-design-iconic-font.min.css')}}">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="{{asset('/login_/vendor/animate/animate.css')}}">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="{{asset('/login_/vendor/css-hamburgers/hamburgers.min.css')}}">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="{{asset('/login_/vendor/animsition/css/animsition.min.css')}}">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="{{asset('/login_/vendor/select2/select2.min.css')}}">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="{{asset('/login_/vendor/daterangepicker/daterangepicker.css')}}">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="{{asset('/login_/css/util.css')}}">
+    <link rel="stylesheet" type="text/css" href="{{asset('/login_/css/main.css')}}">
+    <!--===============================================================================================-->
+</head>
+<body style="background-color: #999999;">
 
-@section('content')
-<div class="container">
-    <div class="row">
-        <div class="col-md-8 col-md-offset-2">
-            <div class="panel panel-default">
-                <div class="panel-heading">Login</div>
+<div class="limiter">
+    <div class="container-login100">
+        <div class="login100-more" style="background-image: url('login_/images/ajala4.jpg');"></div>
 
-                <div class="panel-body">
-                    <form class="form-horizontal" method="POST" action="{{ route('login') }}">
-                        {{ csrf_field() }}
-
-                        <div class="form-group{{ $errors->has('email') ? ' has-error' : '' }}">
-                            <label for="email" class="col-md-4 control-label">E-Mail Address</label>
-
-                            <div class="col-md-6">
-                                <input id="email" type="email" class="form-control" name="email" value="{{ old('email') }}" required autofocus>
-
-                                @if ($errors->has('email'))
-                                    <span class="help-block">
-                                        <strong>{{ $errors->first('email') }}</strong>
-                                    </span>
-                                @endif
-                            </div>
-                        </div>
-
-                        <div class="form-group{{ $errors->has('password') ? ' has-error' : '' }}">
-                            <label for="password" class="col-md-4 control-label">Password</label>
-
-                            <div class="col-md-6">
-                                <input id="password" type="password" class="form-control" name="password" required>
-
-                                @if ($errors->has('password'))
-                                    <span class="help-block">
-                                        <strong>{{ $errors->first('password') }}</strong>
-                                    </span>
-                                @endif
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <div class="col-md-6 col-md-offset-4">
-                                <div class="checkbox">
-                                    <label>
-                                        <input type="checkbox" name="remember" {{ old('remember') ? 'checked' : '' }}> Remember Me
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <div class="col-md-8 col-md-offset-4">
-                                <button type="submit" class="btn btn-primary">
-                                    Login
-                                </button>
-
-                                <a class="btn btn-link" href="{{ route('password.request') }}">
-                                    Forgot Your Password?
-                                </a>
-                            </div>
-                        </div>
-                    </form>
+        <div class="wrap-login100 p-l-50 p-r-50 p-t-72 p-b-50">
+            <form class="login100-form validate-form" method="POST" action="{{ route('login') }}">
+                {{csrf_field()}}
+                <span class="login100-form-title p-b-59">
+						Login
+					</span>
+                @include('partials.errors')
+                <div class="wrap-input100 validate-input" data-validate="Username is required">
+                    <span class="label-input100">Username</span>
+                    <input class="input100" type="text" name="username" value="{{old('username')}}" placeholder="Choose Username" required>
+                    <span class="focus-input100"></span>
                 </div>
-            </div>
+
+                <div class="wrap-input100 validate-input" data-validate = "Password is required">
+                    <span class="label-input100">Password</span>
+                    <input class="input100" type="password" name="password" placeholder="Your Password" required>
+                    <span class="focus-input100"></span>
+                </div>
+
+                <div class="flex-m w-full p-b-33">
+                    <div class="contact100-form-checkbox">
+                        <input class="input-checkbox100" id="ckb1" type="checkbox" name="remember" {{ old('remember') ? 'checked' : '' }}>
+                        <label class="label-checkbox100" for="ckb1">
+								<span class="txt1">
+									Remember Me
+								</span>
+                        </label>
+                    </div>
+
+
+                </div>
+
+                <div class="container-login100-form-btn">
+                    <div class="wrap-login100-form-btn">
+                        <div class="login100-form-bgbtn"></div>
+                        <button class="login100-form-btn" type="submit">
+                            Login
+                        </button>
+                    </div>
+
+                    <a href="{{url('/login')}}" class="dis-block txt3 hov1 p-r-30 p-t-10 p-b-10 p-l-30">
+                        Register here
+                        <i class="fa fa-long-arrow-right m-l-5"></i>
+                    </a>
+                </div>
+            </form>
         </div>
     </div>
 </div>
-@endsection
+
+<!--===============================================================================================-->
+<script src="{{asset('/login_/vendor/jquery/jquery-3.2.1.min.js')}}"></script>
+<!--===============================================================================================-->
+<script src="{{asset('/login_/vendor/animsition/js/animsition.min.js')}}"></script>
+<!--===============================================================================================-->
+<script src="{{asset('/login_/vendor/bootstrap/js/popper.js')}}"></script>
+<script src="{{asset('/login_/vendor/bootstrap/js/bootstrap.min.js')}}"></script>
+<!--===============================================================================================-->
+<script src="{{asset('/login_/vendor/select2/select2.min.js')}}"></script>
+<!--===============================================================================================-->
+<script src="{{asset('/login_/vendor/daterangepicker/moment.min.js')}}"></script>
+<script src="{{asset('/login_/vendor/daterangepicker/daterangepicker.js')}}"></script>
+<!--===============================================================================================-->
+<script src="{{asset('/login_/vendor/countdowntime/countdowntime.js')}}"></script>
+<!--===============================================================================================-->
+<script src="{{asset('/login_/js/main.js')}}"></script>
+
+</body>
+</html>

@@ -10,7 +10,8 @@ class Wishlist extends Model
     public $table = 'wishlists';
 
     protected $fillable = [
-        'wish_id',
-        'sender_id'
+        'user_session_id',
+        'travel_id',
+        'status_id'
     ];
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Libraries\Utilities;
 use App\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
@@ -51,6 +52,11 @@ class RegisterController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:6|confirmed',
+            'username' => 'required|max:40|unique:users',
+            'remember-me' => 'required'
+        ], [
+            'remember-me.required' => 'You must accept the terms and conditions',
+            'password.confirmed' => 'Both passwords must match!'
         ]);
     }
 
@@ -62,10 +68,22 @@ class RegisterController extends Controller
      */
     protected function create(array $data)
     {
-        return User::create([
+        $confirmation_code = str_random(30);
+
+        $user =  User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => bcrypt($data['password']),
+            'username' => $data['username'],
+            'confirmed' => 0,
+            'confirmation_code' => $confirmation_code,
         ]);
+
+        //Send confirmation mail
+        $email = $data['email'];
+        $content = ['fullname' => $data['name'], 'confirmation_code' => $confirmation_code];
+        Utilities::notifyNewUsers($email, $content);
+        //
+        return $user;
     }
 }
